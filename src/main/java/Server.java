@@ -1,5 +1,4 @@
 import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -7,9 +6,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -62,19 +58,32 @@ public class Server {
         final var parts = requestLine.split(" ");
 
         // Реализуйте функциональность по обработке параметров из Query.
+        Request request = new Request(requestLine);
 
-        // get full query
-        String queryParams = getQueryParam(requestLine);
-        System.out.println("User webpage request:\n" + queryParams);
+        // get full request
+        System.out.println("User request: " + request.getRequest());
+
+        // get file path
+        System.out.println("Requested path: " + request.getPath());
 
         // get query params
-        List<NameValuePair> nameValuePairList = getQueryParams(requestLine);
+        List<NameValuePair> nameValuePairList = request.getNameValueParams();
 
         // print query params
         System.out.println("Webpage query parameters values:");
         for (NameValuePair nameValuePair : nameValuePairList) {
             System.out.println(nameValuePair);
         }
+
+        // get parameter value for request http://localhost:9999/index.html?param1=first&param2=second
+        System.out.println("Parameter value: " + request.getQueryParam("param1")); // value = first;
+        System.out.println("Parameter value: " + request.getQueryParam("param3")); // value = null;
+
+        // get http method
+        System.out.println("HTTP method: " + request.getHttpMethod());
+
+        // get http version
+        System.out.println("HTTP version: " + request.getHttpVersion());
 
         if (parts.length != httpParts) {
             // just close socket
@@ -124,24 +133,5 @@ public class Server {
                 "\r\n";
         out.write(response.getBytes());
         out.flush();
-    }
-
-    private List<NameValuePair> getQueryParams(String requestLine) {
-        var parts = requestLine.split(" ");
-        try {
-            return URLEncodedUtils.parse(new URI(parts[1]), Charset.forName("UTF-8"));
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private String getQueryParam(String requestLine) {
-        int httpParts = 3;
-        final var parts = requestLine.split(" ");
-        if (parts.length != httpParts) {
-            return null;
-        } else {
-            return parts[1].substring(0, parts[1].indexOf("?"));
-        }
     }
 }
